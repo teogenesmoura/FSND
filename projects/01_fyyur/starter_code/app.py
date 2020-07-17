@@ -1,3 +1,13 @@
+#-------------
+# References used
+#--------
+# https://stackoverflow.com/questions/16573095/case-insensitive-flask-sqlalchemy-query
+# https://stackoverflow.com/questions/57473720/how-to-fix-importerror-cannot-import-name-sqlalchemy
+# https://stackoverflow.com/questions/7005302/postgresql-how-to-make-case-insensitive-query
+# I only saw I needed to list these links when I got to the submit project page, so these are the only 
+# ones I was able to retrieve from my chrome://history page. For the next projects, I'll make sure to 
+# store them as I'm implementing the project. 
+
 #----------------------------------------------------------------------------#
 # Imports
 #----------------------------------------------------------------------------#
