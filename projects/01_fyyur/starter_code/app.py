@@ -31,6 +31,7 @@ migrate = Migrate(app, db)
 
 class Show(db.Model):
   __tablename__ = 'Show'
+  id = db.Column(db.Integer, primary_key=True)
   venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
   artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), primary_key=True)
   start_time = db.Column(db.DateTime, default=datetime.utcnow)
@@ -119,14 +120,31 @@ def search_venues():
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
-  error = False
-  venue = {}
+  error = False 
   try: 
     venue = Venue.query.get(venue_id)
   except:
     error = True 
     print(sys.exc_info())
-  return render_template('pages/show_venue.html', venue=venue)
+  if error:
+    flash('An error occurred. Venue with id ' + venue_id + ' could not be shown.')
+  else: 
+    body = {}
+    body['id'] = venue.id
+    body['name'] = venue.name
+    body['city'] = venue.city
+    body['phone'] = venue.phone
+    body['genres'] = venue.genres if venue.genres else []
+    body['image_link'] = venue.image_link 
+    body['facebook_link'] = venue.facebook_link 
+    body['website'] = venue.website 
+    body['seeking_talent'] = venue.seeking_talent
+    body['seeking_description'] = venue.seeking_description
+    body['upcoming_shows'] = get_shows_by_page_and_date_status("venue",venue.id,"upcoming")
+    body['upcoming_shows_count'] = len(body['upcoming_shows'])
+    body['past_shows'] = get_shows_by_page_and_date_status("venue", venue.id,"past")
+    body['past_shows_count'] = len(body['past_shows'])
+  return render_template('pages/show_venue.html', venue=body)
 
 #  Create Venue
 #  ----------------------------------------------------------------
@@ -190,13 +208,36 @@ def artists():
   	data.append({"id": artist.id, "name": artist.name})
   return render_template('pages/artists.html', artists=data)
 
-def get_upcoming_shows_for_artist(artist_id):
-  artist = Artist.query.get(artist_id)
-  shows = Show.query.filter_by(artist_id=artist_id)
+def get_shows_by_page_and_date_status(page,entity_id,status):
+    #Returns an array of Show objects filtered by whether we want 
+    #information for artists or venues and classified by upcoming or 
+    #past shows.
+
+    #Parameters:
+    # page (str):Valid values are "artist" and "venue"
+    # entity_id (integer): artist_id or venue_id 
+    # status (str): Valid values are "upcoming" and "past"
+
+    #Returns:
+    #    result (Array): Array of objects containing artist_name, 
+    # artist_id, venue_name, venue_id and the show's start_time   
+  page, status = page.lower(), status.lower()
   result = []
+  if page == "artist":
+    shows = Show.query.filter_by(artist_id=entity_id)
+  if page == "venue":
+    shows = Show.query.filter_by(venue_id=entity_id)
   for show in shows:
-    if show.start_time > datetime.today():
-      result.append(show)
+    curr = {}
+    curr['artist_name'] = Artist.query.get(show.artist_id).name
+    curr['venue_name'] = Venue.query.get(show.venue_id).name
+    curr['artist_id'] = show.artist_id 
+    curr['venue_id'] = show.venue_id 
+    curr['start_time'] = str(show.start_time)    
+    if status == 'upcoming' and show.start_time > datetime.today():
+      result.append(curr)
+    if status == 'past' and show.start_time < datetime.today():
+      result.append(curr)   
   return result 
 
 @app.route('/artists/search', methods=['POST'])
@@ -217,18 +258,31 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-  # shows the venue page with the given venue_id
-  body = {}
-  data = Artist.query.filter_by(id=artist_id).all()
-  body['name'] = data[0].name
-  body['city'] = data[0].city
-  body['phone'] = data[0].phone
-  body['genres'] = data[0].genres if data[0].genres else []
-  body['image_link'] = data[0].image_link 
-  body['facebook_link'] = data[0].facebook_link 
-  body['website'] = data[0].website 
-  body['seeking_venue'] = data[0].seeking_venue
-  body['seeking_description'] = data[0].seeking_description
+  # shows the venue page with the given venue_id  error = False
+  error = False 
+  try: 
+    artist = Artist.query.get(artist_id)
+  except:
+    error = True 
+    print(sys.exc_info())
+  if error:
+    flash('An error occurred. Artist with id ' + artist_id + ' could not be shown.')
+  else: 
+    body = {}
+    body['id'] = artist.id
+    body['name'] = artist.name
+    body['city'] = artist.city
+    body['phone'] = artist.phone
+    body['genres'] = artist.genres if artist.genres else []
+    body['image_link'] = artist.image_link 
+    body['facebook_link'] = artist.facebook_link 
+    body['website'] = artist.website 
+    body['seeking_venue'] = artist.seeking_venue
+    body['seeking_description'] = artist.seeking_description
+    body['upcoming_shows'] = get_shows_by_page_and_date_status("artist",artist.id,"upcoming")
+    body['upcoming_shows_count'] = len(body['upcoming_shows'])
+    body['past_shows'] = get_shows_by_page_and_date_status("artist", artist.id,"past")
+    body['past_shows_count'] = len(body['past_shows'])
   return render_template('pages/show_artist.html', artist=body)
   
 #  Update
